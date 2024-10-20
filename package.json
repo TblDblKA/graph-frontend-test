@@ -2,7 +2,6 @@
   "name": "graph.frontend.test",
   "private": true,
   "version": "0.0.1",
-  "packageManager": "yarn@4.4.0",
   "type": "module",
   "scripts": {
     "start": "vite",
@@ -30,6 +29,8 @@
     "vitest": "^2.0.5"
   },
   "msw": {
-    "workerDirectory": [""]
+    "workerDirectory": [
+      ""
+    ]
   }
 }
