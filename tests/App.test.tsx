@@ -1,6 +1,6 @@
 import React from "react";
 import { it, expect } from "vitest";
-import { render, within, cleanup } from "@testing-library/react";
+import { render, within, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import graphs from "../src/mocks/graphs";
@@ -17,9 +17,9 @@ it("Приложение отображается", () => {
     render(<App />);
 });
 
-it("Есть выпадающий список со всеми доступными графами", () => {
+it("Есть выпадающий список со всеми доступными графами", async() => {
     const { getByRole } = setup(<App />);
-    const options = within(getByRole("combobox")).getAllByRole("option");
+    const options = await waitFor(() => within(getByRole("combobox")).getAllByRole("option"))
 
     expect(options.length).toBe(graphs.length);
 });
@@ -28,7 +28,7 @@ it("Выбранный граф отображается после выбора
     const selectedGraph = 2;
     const { getByRole, findByText, user } = setup(<App />);
 
-    user.selectOptions(getByRole("combobox"), `${selectedGraph}`);
+    await waitFor(() => user.selectOptions(getByRole("combobox"), `${selectedGraph}`))
 
     for (let node of graphs[selectedGraph].nodes) {
         await findByText(node.name);
@@ -41,13 +41,15 @@ it("Узлы в простом графе организованы в столб
 
     const correctColumns = [["start"], ["foo", "bar"], ["end1", "end2"]];
 
-    user.selectOptions(getByRole("combobox"), `${selectedGraph}`);
+    await waitFor(() => user.selectOptions(getByRole("combobox"), `${selectedGraph}`))
 
     for (let idx = 0; idx < correctColumns.length; idx++) {
         const col = correctColumns[idx];
         const otherCols = correctColumns.flatMap((c, i) => (i === idx ? [] : c));
+        console.log(correctColumns[idx], otherCols);
 
         let parent = await findByText(col[0]);
+        console.log(parent);
         while (parent) {
             parent = parent.parentElement as HTMLElement;
             const hasEveryCorrect = col.every((n) => !!within(parent).queryByText(n));
@@ -55,6 +57,7 @@ it("Узлы в простом графе организованы в столб
                 (n) => !within(parent).queryByText(n)
             );
             if (hasEveryCorrect) {
+                console.log(parent)
                 expect(doesntHaveAnyOther).toBeTruthy();
                 break;
             }

@@ -17,10 +17,10 @@ export const App = () => {
     const graphComponent = useMemo(() => {
         return (
             Object.keys(graph).length && (
-            <Graph
-                graphData={graph}
-            />
-        ))
+                <Graph
+                    graphData={graph}
+                />
+            ))
     }, [graph])
 
     // useEffect(() => {

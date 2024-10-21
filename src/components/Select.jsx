@@ -9,7 +9,7 @@ export default function Select({ data, value, handleSelect }) {
                 value={undefined}
                 style={{display: 'none'}}
             />
-            {data?.length && data.map(el =>
+            {data?.length > 0 && data.map(el =>
                 <option
                     key={el}
                     value={el}

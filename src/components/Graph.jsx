@@ -1,4 +1,5 @@
 import {useEffect, useState} from "react"
+import GraphNode from "./GraphNode"
 
 export default function Graph({ graphData }) {
     const [columns, setColumns] = useState([]);
@@ -11,7 +12,6 @@ export default function Graph({ graphData }) {
     }, [graphData])
 
     function buildColumns() {
-        console.log('build columns')
         if (!graphData.edges?.length) return
         const adjacencyList = {}
         const hasParent = {}
@@ -171,19 +171,6 @@ export default function Graph({ graphData }) {
     const columnSpacing = 80
     const rowSpacing = 20
 
-    function getNodePosition(nodeId) {
-        if (columns.length === 0) return { x: 0, y: 0 }
-        for (let colIndex = 0; colIndex < columns.length; colIndex++) {
-            const rowIndex = columns[colIndex].indexOf(nodeId)
-            if (rowIndex !== -1) {
-                const x = colIndex * columnSpacing + colIndex * nodeWidth
-                const y = rowIndex * rowSpacing + rowIndex * nodeHeight
-                return { x, y }
-            }
-        }
-        return { x: 0, y: 0 }
-    }
-
     function getLinePosition(fromId, toId) {
         if (columns.length === 0) return [{ x: 0, y: 0 }, { x: 0, y: 0 }]
         for (let colIndex = 0; colIndex < columns.length - 1; colIndex++) {
@@ -208,70 +195,53 @@ export default function Graph({ graphData }) {
     }
 
     function nodeName(nodeId) {
-        // console.log(graphData.nodes, nodeId, columns)
         return graphData.nodes?.length ? graphData.nodes.find(el => el.id === nodeId)?.name : ''
+    }
+
+    function handleMove(nodeId, x, rowIndex) {
+        console.log(x)
     }
 
     return (
         <div>
-            {console.log(graphData, columns)}
-            {/*{maxHeight}*/}
-            {/*{columns && columns.map((column, index) => (*/}
-            {/*    <ul key={index}>*/}
-            {/*        {column.map(el => (<li key={el}>{el}</li>))}*/}
-            {/*    </ul>*/}
-
-            {/*))}*/}
-            {/*<div>{JSON.stringify(graphData.edges)}</div>*/}
             {graphData.edges?.length && graphData.nodes?.length && columns.length &&
                 (
                     <svg
-                    width={nodeWidth * columns.length + columnSpacing * (columns.length - 1) + 2}
-                    height={nodeHeight * maxHeight + rowSpacing * (maxHeight - 1) + 2}
-                >
-                    {graphData.edges.map((edge, i) => {
-                        const [fromPos, toPos] = getLinePosition(edge.fromId, edge.toId)
-                        return (
-                            <line
-                                key={i}
-                                x1={fromPos.x}
-                                y1={fromPos.y}
-                                x2={toPos.x}
-                                y2={toPos.y}
-                                stroke="black"
-                                strokeWidth="2"
-                            />
-                        )
-                    })}
-                    {columns.map((columns, colIndex) =>
-                        columns.map((nodeId, rowIndex) => {
-                            const { x, y } = getNodePosition(nodeId)
+                        width={nodeWidth * columns.length + columnSpacing * (columns.length - 1) + 2}
+                        height={nodeHeight * maxHeight + rowSpacing * (maxHeight - 1) + 2}
+                    >
+                        {graphData.edges.map((edge, i) => {
+                            const [fromPos, toPos] = getLinePosition(edge.fromId, edge.toId)
                             return (
-                                <g key={nodeId}>
-                                    <rect
-                                        width={nodeWidth}
-                                        height={nodeHeight}
-                                        x={x}
-                                        y={y}
-                                        fill="lightblue"
-                                        stroke="black"
-                                        strokeWidth="1"
-                                    />
-                                    <text
-                                        x={x + 40}
-                                        y={y + 20}
-                                        textAnchor="middle"
-                                        fontSize="12"
-                                        fill="black"
-                                    >
-                                        {nodeName(nodeId)}
-                                    </text>
-                                </g>
+                                <line
+                                    key={i}
+                                    x1={fromPos.x}
+                                    y1={fromPos.y}
+                                    x2={toPos.x}
+                                    y2={toPos.y}
+                                    stroke="black"
+                                    strokeWidth="2"
+                                />
                             )
-                        })
-                    )}
-                </svg>
-            )}
+                        })}
+                        {columns.map((nodes, colIndex) =>
+                            <svg
+                                x={colIndex * (columnSpacing + nodeWidth)}
+                            >
+                                {nodes.map((nodeId, rowIndex) =>
+                                    <GraphNode
+                                        key={nodeId}
+                                        y={rowIndex * (rowSpacing + nodeHeight)}
+                                        nodeWidth={nodeWidth}
+                                        nodeHeight={nodeHeight}
+                                        nodeName={nodeName(nodeId)}
+                                        handleMove={y => handleMove(nodeId, y, rowIndex)}
+                                    />
+                                )}
+                            </svg>
+                        )}
+                    </svg>
+                )}
         </div>
     )
 }
