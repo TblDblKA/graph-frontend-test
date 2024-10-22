@@ -1,9 +1,15 @@
 import {useEffect, useState} from "react"
-import GraphNode from "./GraphNode"
+import { NodesColumns } from './NodesColumns'
+import { Edges } from './Edges'
+import type { GraphStr } from '../interfaces'
+import * as constants from '../consts'
 
-export default function Graph({ graphData }) {
-    const [columns, setColumns] = useState([]);
-    const maxHeight = columns.reduce((maxLength, column) => Math.max(maxLength, column.length), 0);
+type Columns = number[][]
+type AdjacencyList = Record<number, number[]>
+
+export const Graph = ({ graphData }: { graphData: GraphStr }) => {
+    const [columns, setColumns] = useState<Columns>([]);
+    const maxHeight = columns.reduce((maxLength, column) => Math.max(maxLength, column.length), 0)
 
     useEffect(() => {
         if (!graphData.edges?.length) return
@@ -11,10 +17,10 @@ export default function Graph({ graphData }) {
         setColumns(processedColumns)
     }, [graphData])
 
-    function buildColumns() {
-        if (!graphData.edges?.length) return
-        const adjacencyList = {}
-        const hasParent = {}
+    function buildColumns(): Columns {
+        if (!graphData.edges?.length) return []
+        const adjacencyList: AdjacencyList = {}
+        const hasParent: Record<number, boolean> = {}
 
         graphData.nodes.forEach(node => {
             hasParent[node.id] = false
@@ -25,14 +31,14 @@ export default function Graph({ graphData }) {
             adjacencyList[edge.fromId].push(edge.toId)
             hasParent[edge.toId] = true
         })
-        const columns = []
+        const columns: Columns = []
         const visited = new Set()
         let currentColumn = graphData.nodes
             .filter(node => !hasParent[node.id])
             .map(node => node.id)
         while (currentColumn.length > 0) {
             columns.push(currentColumn)
-            const nextColumn = []
+            const nextColumn: number[] = []
             currentColumn.forEach(nodeId => {
                 adjacencyList[nodeId].forEach(childId => {
                     if (!visited.has(childId)) {
@@ -47,11 +53,11 @@ export default function Graph({ graphData }) {
         return reorderColumns(columns, adjacencyList)
     }
 
-    function reorderColumns(columns,adjList) {
-        // debugger
+    function reorderColumns(columns: Columns, adjList: AdjacencyList): Columns {
         let forgivenessNumber = 10
         let lowestCrossings = Infinity
         let totalCrossings = 0
+        // make a deep copy
         let bestConfiguration = columns.map(el => [...el])
         let currentConfiguration = bestConfiguration.map(el => [...el])
 
@@ -98,7 +104,7 @@ export default function Graph({ graphData }) {
         return bestConfiguration
     }
 
-    function barycenterFix(baseLayer, currentLayer, adjList) {
+    function barycenterFix(baseLayer: number[], currentLayer: number[], adjList: AdjacencyList): number[] {
         const barycenters = currentLayer.map(childNode => {
             const weight = baseLayer.reduce(([barycenter, num], parentNode, index) => {
                 if (adjList[parentNode].includes(childNode)) return [(index + num * barycenter) / (num + 1), num + 1]
@@ -117,7 +123,7 @@ export default function Graph({ graphData }) {
         return barycenters.map(el => el.nodeId)
     }
 
-    function barycenterFixRight(baseLayer, currentLayer, adjList) {
+    function barycenterFixRight(baseLayer: number[], currentLayer: number[], adjList: AdjacencyList): number[] {
         const barycenters = currentLayer.map(parentNode => {
             const weight = adjList[parentNode].reduce((barycenter, childNode) => {
                 return barycenter + baseLayer.indexOf(childNode) + 1
@@ -135,7 +141,7 @@ export default function Graph({ graphData }) {
         return barycenters.map(el => el.nodeId)
     }
 
-    function countCrossing(baseLayer, currentLayer, direction='left') {
+    function countCrossing(baseLayer: number[], currentLayer: number[], direction='left'): number {
         let crossings = 0
         const edges = graphData.edges.filter(edge => direction === 'left' ? baseLayer.includes(edge.fromId) : baseLayer.includes(edge.toId))
         for (let i = 0; i < edges.length; i++) {
@@ -166,79 +172,25 @@ export default function Graph({ graphData }) {
         return crossings
     }
 
-    const nodeWidth = 100
-    const nodeHeight = 40
-    const columnSpacing = 80
-    const rowSpacing = 20
-
-    function getLinePosition(fromId, toId) {
-        if (columns.length === 0) return [{ x: 0, y: 0 }, { x: 0, y: 0 }]
-        for (let colIndex = 0; colIndex < columns.length - 1; colIndex++) {
-            const fromRowIndex = columns[colIndex].indexOf(fromId)
-            if (fromRowIndex !== -1) {
-                const toRowIndex = columns[colIndex + 1].indexOf(toId)
-                if (toRowIndex !== -1) {
-                    return [
-                        {
-                            x: (colIndex + 1) * (nodeWidth) + colIndex * columnSpacing,
-                            y: fromRowIndex * (nodeHeight + rowSpacing) + nodeHeight / 2,
-                        },
-                        {
-                            x: (colIndex + 1) * (nodeWidth) + (colIndex + 1) * columnSpacing,
-                            y: toRowIndex * (nodeHeight + rowSpacing) + nodeHeight / 2,
-                        }
-                    ]
-                }
-            }
-        }
-        return [{ x: 0, y: 0 }, { x: 0, y: 0 }]
-    }
-
-    function nodeName(nodeId) {
-        return graphData.nodes?.length ? graphData.nodes.find(el => el.id === nodeId)?.name : ''
-    }
-
-    function handleMove(nodeId, x, rowIndex) {
-        console.log(x)
-    }
-
     return (
         <div>
             {graphData.edges?.length && graphData.nodes?.length && columns.length &&
                 (
                     <svg
-                        width={nodeWidth * columns.length + columnSpacing * (columns.length - 1) + 2}
-                        height={nodeHeight * maxHeight + rowSpacing * (maxHeight - 1) + 2}
+                        width={constants.NODE_WIDTH * columns.length + constants.COLUMN_SPACING * (columns.length - 1) + 2}
+                        height={constants.NODE_HEIGHT * maxHeight + constants.ROW_SPACING * (maxHeight - 1) + 2}
                     >
-                        {graphData.edges.map((edge, i) => {
-                            const [fromPos, toPos] = getLinePosition(edge.fromId, edge.toId)
-                            return (
-                                <line
-                                    key={i}
-                                    x1={fromPos.x}
-                                    y1={fromPos.y}
-                                    x2={toPos.x}
-                                    y2={toPos.y}
-                                    stroke="black"
-                                    strokeWidth="2"
-                                />
-                            )
-                        })}
+                        <Edges
+                            columns={columns}
+                            graphEdges={graphData.edges}
+                        />
                         {columns.map((nodes, colIndex) =>
-                            <svg
-                                x={colIndex * (columnSpacing + nodeWidth)}
-                            >
-                                {nodes.map((nodeId, rowIndex) =>
-                                    <GraphNode
-                                        key={nodeId}
-                                        y={rowIndex * (rowSpacing + nodeHeight)}
-                                        nodeWidth={nodeWidth}
-                                        nodeHeight={nodeHeight}
-                                        nodeName={nodeName(nodeId)}
-                                        handleMove={y => handleMove(nodeId, y, rowIndex)}
-                                    />
-                                )}
-                            </svg>
+                            <NodesColumns
+                                key={colIndex}
+                                columns={nodes}
+                                colIndex={colIndex}
+                                nodes={graphData.nodes}
+                            />
                         )}
                     </svg>
                 )}

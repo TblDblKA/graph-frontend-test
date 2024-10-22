@@ -1,47 +1,44 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import './App.css'
-import Select from './components/Select'
-import Graph from './components/Graph'
+import { Select } from './components/Select'
+import { Graph } from './components/Graph'
+import type { GraphStr } from './interfaces'
 
 export const App = () => {
     const [graphsIdList, setGraphsIdList] = useState<number[]>([])
     const [selectedGraphId, setSelectedGraphId] = useState<string | undefined>(undefined)
-    const [graph, setGraph] = useState({})
+    const [graph, setGraph] = useState<GraphStr>({} as GraphStr)
 
     useEffect(() => {
         fetch('api/graphs')
             .then((res) => res.json())
-            .then((res) => { setGraphsIdList(res)})
+            .then((res: number[]) => { setGraphsIdList(res)})
     }, [])
 
     const graphComponent = useMemo(() => {
         return (
-            Object.keys(graph).length && (
+            Object.keys(graph).length > 0 && (
                 <Graph
                     graphData={graph}
                 />
             ))
     }, [graph])
 
-    // useEffect(() => {
-    //
-    // }, [selectedGraphId]);
+    const handleSelect = useCallback((newVal: string) => {
 
-    const handleSelect = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
-
-        fetch(`api/graphs/${event.currentTarget.value}`)
+        fetch(`api/graphs/${newVal}`)
             .then((res) => res.json())
-            .then(data => {setGraph(data)})
-        setSelectedGraphId(event.currentTarget.value)
+            .then((data: GraphStr) => {setGraph(data)})
+        setSelectedGraphId(newVal)
     }, [])
     return (
-        <>
+        <div id="app-wrapper">
             <Select
                 data={graphsIdList}
                 value={selectedGraphId}
                 handleSelect={handleSelect}
             />
             {graphComponent}
-        </>
+        </div>
     )
 }
